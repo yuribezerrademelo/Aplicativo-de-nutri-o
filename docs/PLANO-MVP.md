@@ -42,7 +42,25 @@ O MVP está pronto quando o Yuri conseguir usar o app no S24 Ultra durante uma s
 
 A etapa 2 vem antes da interface de propósito: o motor de análise é o coração do produto e dá para calibrar o prompt com as suas fotos de referência sem depender de tela nenhuma.
 
-## Decisões em aberto
+## Decisões tomadas
 
-- **Total do dia com faixa ou número único?** Proposta: mostrar o valor provável em destaque e a faixa somada em texto menor ("1.640 kcal, entre 1.480 e 1.830").
-- **Meta padrão sugerida no onboarding**: manutenção, ou déficit moderado (por exemplo, 15% abaixo do gasto)? O usuário sempre pode ajustar.
+### Exibição do saldo do dia
+Barra de progresso em direção à meta, com dois níveis visuais: o preenchimento sólido vai até o valor provável e uma faixa mais clara mostra a margem (mín a máx). O número provável fica no canto superior da barra ("1.640 / 2.100 kcal") e a faixa aparece como detalhe menor logo abaixo ("entre 1.480 e 1.830"). Assim o usuário tem a noção visual e a numérica ao mesmo tempo.
+
+### Meta calórica por objetivo
+A meta nasce do objetivo de cada pessoa, não de um padrão único:
+
+1. **Gasto basal (TMB)**, por ordem de preferência:
+   - valor medido em avaliação física / bioimpedância, se o usuário tiver;
+   - Katch-McArdle, se o usuário informar o % de gordura;
+   - Mifflin-St Jeor, a partir de sexo, idade, altura e peso.
+2. **Gasto total** = TMB × fator de atividade (1,2 sedentário; 1,375 leve; 1,55 moderado; 1,725 intenso; 1,9 muito intenso).
+3. **Objetivo e ritmo** definem o ajuste:
+   - perder peso: déficit leve (10%), moderado (15%) ou acelerado (20%);
+   - manter: sem ajuste;
+   - ganhar peso: superávit leve (5%), moderado (10%) ou acelerado (15%).
+4. **Trava de segurança**: a meta de perda nunca fica abaixo da TMB; se o ritmo escolhido levaria a isso, o app limita e explica por quê.
+
+O usuário vê de onde veio cada número e pode ajustar a meta manualmente.
+
+**Fase 2:** importar a avaliação física por foto ou PDF, com a IA extraindo TMB, % de gordura e massa magra automaticamente.
