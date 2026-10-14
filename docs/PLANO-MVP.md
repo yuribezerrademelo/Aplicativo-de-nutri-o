@@ -1,6 +1,6 @@
 # Plano do MVP
 
-Status: **proposta, aguardando aprovação do Yuri**
+Status: **aprovado em 14/10/2026** · etapa atual: **0 (fundação) concluída no código, aguardando teste no celular**
 
 ## Objetivo
 
