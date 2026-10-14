@@ -48,6 +48,11 @@ create trigger perfis_tocar_atualizado_em
 before update on public.perfis
 for each row execute function public.tocar_atualizado_em();
 
+-- Acesso pela API: só usuários logados, e só leitura, criação e edição
+-- (explícito, para funcionar mesmo com "Automatically expose new tables" desligado)
+revoke all on public.perfis from anon, authenticated;
+grant select, insert, update on public.perfis to authenticated;
+
 -- Segurança: cada usuário só enxerga e altera o próprio perfil
 alter table public.perfis enable row level security;
 
