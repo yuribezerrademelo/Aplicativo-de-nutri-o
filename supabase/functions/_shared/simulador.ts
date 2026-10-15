@@ -36,6 +36,10 @@ const REFERENCIAS: Referencia[] = [
   { chave: /f[ií]gado/, nome: 'Fígado bovino', porcao: '1 bife médio', gramas: 100, preparo: 'grelhado', proteina: true, por100: [225, 29.9, 4.2, 9, 0] },
   { chave: /bife|carne/, nome: 'Bife bovino', porcao: '1 bife médio', gramas: 100, preparo: 'grelhado', proteina: true, por100: [219, 32, 0, 9.5, 0] },
   { chave: /calabresa|lingui[cç]a/, nome: 'Calabresa', porcao: '4 rodelas', gramas: 60, preparo: 'acebolada', proteina: true, por100: [300, 16, 1, 26, 0] },
+  { chave: /batata[- ]doce/, nome: 'Batata-doce', porcao: '1 unidade média', gramas: 150, preparo: 'cozida', proteina: false, por100: [77, 0.6, 18.4, 0.1, 2.2] },
+  { chave: /batata(?![- ]doce)/, nome: 'Batata', porcao: '1 porção média', gramas: 200, preparo: 'assada', proteina: false, por100: [90, 2, 20, 0.2, 2] },
+  { chave: /macarr[aã]o/, nome: 'Macarrão', porcao: '1 pegador', gramas: 150, preparo: 'cozido', proteina: false, por100: [130, 4.5, 26, 0.6, 1.5] },
+  { chave: /peixe|til[aá]pia/, nome: 'Peixe', porcao: '1 filé médio', gramas: 120, preparo: 'grelhado', proteina: true, por100: [130, 26, 0, 3, 0] },
   { chave: /macaxeira|mandioca|aipim/, nome: 'Macaxeira', porcao: '2 pedaços médios', gramas: 150, preparo: 'cozida', proteina: false, por100: [125, 0.6, 30.1, 0.3, 1.6] },
   { chave: /p[aã]es?\b|p[aã]o franc/, nome: 'Pão francês', porcao: '1 unidade', gramas: 50, preparo: 'puro', proteina: false, por100: [300, 8, 58.6, 3.1, 2.3] },
   { chave: /banana/, nome: 'Banana', porcao: '1 unidade', gramas: 70, preparo: 'in natura', proteina: false, por100: [98, 1.3, 26, 0.1, 2] },
@@ -127,10 +131,17 @@ function refinar(anterior: ResultadoAnalise, correcao: string): ItemEstimado[] {
   if (/\bmenor\b/.test(c)) itens = itens.map((i) => escalar(i, 0.8));
   if (/\bmaior\b/.test(c)) itens = itens.map((i) => escalar(i, 1.2));
 
-  // "150 g de arroz": o peso informado vira verdade para o item correspondente.
-  for (const m of c.matchAll(/(\d+)\s*(?:g|gramas)\s+(?:de\s+)?([a-zà-ú]+)/g)) {
-    const alvo = itens.findIndex((i) => i.nome.toLowerCase().includes(m[2].slice(0, 5)));
-    if (alvo >= 0) itens[alvo] = ajustarGramas(itens[alvo], Number(m[1]));
+  // Alimentos citados que ainda não estavam no prato entram como itens novos.
+  const nomesAtuais = new Set(itens.map((i) => i.nome));
+  itens.push(...itensDoTexto(c).filter((i) => !nomesAtuais.has(i.nome)));
+
+  // Peso informado vira verdade para o item: "150 g de arroz" ou "o frango tinha 280 g".
+  const pesos: [string, number][] = [];
+  for (const m of c.matchAll(/(\d+)\s*(?:g|gramas)\s+(?:de\s+)?([a-zà-ú]+)/g)) pesos.push([m[2], Number(m[1])]);
+  for (const m of c.matchAll(/([a-zà-ú]{4,})[^\d.,;]{0,20}?(\d+)\s*(?:g|gramas)\b/g)) pesos.push([m[1], Number(m[2])]);
+  for (const [palavra, gramas] of pesos) {
+    const alvo = itens.findIndex((i) => i.nome.toLowerCase().includes(palavra.slice(0, 5)));
+    if (alvo >= 0 && itens[alvo].gramas !== gramas) itens[alvo] = ajustarGramas(itens[alvo], gramas);
   }
   return itens;
 }

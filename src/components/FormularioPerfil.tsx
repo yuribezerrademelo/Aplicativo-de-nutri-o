@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Botao } from '@/components/Botao';
@@ -196,7 +196,7 @@ export function FormularioPerfil({ inicial, onSalvar, onCancelar }: Props) {
 
   return (
     <SafeAreaView style={styles.tela}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
         <View style={styles.progresso}>
           <Text style={styles.passoTexto}>
             Passo {passo + 1} de {PASSOS.length}

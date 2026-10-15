@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Botao } from '@/components/Botao';
@@ -53,7 +53,7 @@ export default function TelaEntrar() {
     <SafeAreaView style={styles.tela}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior="padding"
       >
         <ScrollView contentContainerStyle={styles.conteudo} keyboardShouldPersistTaps="handled">
           <View style={styles.cabecalho}>

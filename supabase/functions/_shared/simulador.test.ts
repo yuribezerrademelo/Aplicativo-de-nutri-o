@@ -32,6 +32,28 @@ test('simulador: "foi frito" aumenta as calorias da proteína e encerra as pergu
   assert.ok(depois.total.kcal_provavel > antes.total.kcal_provavel);
 });
 
+test('simulador: especificação inclui item novo e aceita gramas depois do nome', async () => {
+  const antes = await simularAnalise({ imagem: { base64: 'x', tipo: 'image/jpeg' }, texto: 'frango' }, 0);
+  assert.deepEqual(antes.itens.map((i) => i.nome), ['Peito de frango']);
+  const depois = await simularAnalise(
+    {
+      imagem: { base64: 'x', tipo: 'image/jpeg' },
+      texto: 'frango',
+      anterior: antes,
+      correcao: 'Tinha batata cortada em cubinhos feita na airfryer. O frango tinha 280 g',
+    },
+    0,
+  );
+  assert.deepEqual(depois.itens.map((i) => i.nome), ['Peito de frango', 'Batata']);
+  assert.equal(depois.itens[0].gramas, 280);
+  assert.equal(depois.itens[0].confianca, 'alta');
+});
+
+test('simulador: batata-doce não vira batata comum', async () => {
+  const r = await simularAnalise({ texto: 'batata-doce cozida' }, 0);
+  assert.deepEqual(r.itens.map((i) => i.nome), ['Batata-doce']);
+});
+
 test('ajustarGramas: escala proporcionalmente e estreita a faixa', () => {
   const item: ItemEstimado = {
     nome: 'Arroz',
