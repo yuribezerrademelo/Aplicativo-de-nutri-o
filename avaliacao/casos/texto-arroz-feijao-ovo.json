@@ -1,0 +1,6 @@
+{
+  "descricao": "Prato feito descrito com gramas",
+  "texto": "150 g de arroz branco cozido, 100 g de feijão carioca cozido e 2 ovos cozidos",
+  "esperado_kcal": 414,
+  "fonte": "TACO: arroz 128, feijão carioca 76, ovo cozido 146 kcal/100 g (ovo de 50 g)"
+}

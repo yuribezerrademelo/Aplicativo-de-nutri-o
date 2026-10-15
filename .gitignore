@@ -42,3 +42,15 @@ yarn-error.*
 
 # env (chaves do Supabase)
 .env
+
+# avaliação do motor de análise
+.env.avaliacao
+avaliacao/resultados/
+avaliacao/casos/*.jpg
+avaliacao/casos/*.jpeg
+avaliacao/casos/*.png
+avaliacao/casos/*.webp
+
+# segredos locais das edge functions
+supabase/functions/.env
+supabase/.temp/

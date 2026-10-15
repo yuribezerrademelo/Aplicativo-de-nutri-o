@@ -1,0 +1,5 @@
+{
+  "descricao": "Entrada que não é comida (deve voltar reconhecido = false)",
+  "texto": "a chave do carro em cima da mesa",
+  "esperado_kcal": 0
+}

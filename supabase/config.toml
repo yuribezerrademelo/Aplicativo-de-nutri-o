@@ -1,0 +1,7 @@
+# Configuração do Supabase CLI para este projeto.
+project_id = "aplicativo-de-nutricao"
+
+[functions.analisar-refeicao]
+# O gateway valida o login antes da função rodar; a função valida de novo.
+verify_jwt = true
+import_map = "./functions/analisar-refeicao/deno.json"

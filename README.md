@@ -34,6 +34,24 @@ App de acompanhamento nutricional focado em comida brasileira de verdade. O usu�
    Abra o Expo Go e escaneie o QR code. Celular e computador precisam estar na mesma rede Wi-Fi;
    se não funcionar, use `npx expo start --tunnel`.
 
+## Motor de análise (edge function)
+
+A análise das refeições roda na edge function `analisar-refeicao`, que chama a Claude API. A chave da API fica só no Supabase, nunca no app.
+
+1. **Chave da Claude API:** crie em [platform.claude.com](https://platform.claude.com/) → API Keys e carregue créditos.
+2. **Segredo no Supabase:** no painel, **Edge Functions → Secrets**, adicione `ANTHROPIC_API_KEY` com a sua chave. Opcionais:
+   - `ANALISE_MODELO` (padrão `claude-sonnet-5-5`)
+   - `ANALISE_ESFORCO`: `low`, `medium` ou `high` (padrão `medium`)
+   - `ANALISE_LIMITE_DIARIO`: análises por usuário em 24 h (padrão `40`)
+3. **Deploy** (não precisa de Docker):
+   ```bash
+   npx supabase login
+   npx supabase functions deploy analisar-refeicao --project-ref SEU_PROJECT_REF --use-api
+   ```
+4. **Avaliar a qualidade** das estimativas localmente: veja [avaliacao/README.md](avaliacao/README.md).
+
+Mudou o prompt (`supabase/functions/_shared/prompt-analise.ts`)? Rode `npm run avaliar` antes e depois, atualize `VERSAO_PROMPT` e faça o deploy de novo.
+
 ## Estrutura
 
 ```
@@ -51,6 +69,11 @@ src/
   theme.ts          cores, espaçamentos e fontes
 supabase/
   migrations/       SQL do banco, em ordem
+  functions/
+    _shared/        motor de análise (prompt, schema, chamada à API), usado pela função e pelos testes
+    analisar-refeicao/  edge function: login, limite diário, registro de uso
+scripts/            script de avaliação do motor
+avaliacao/          casos de referência para medir as estimativas
 docs/
   PLANO-MVP.md      escopo do MVP, decisões e roadmap
 ```
@@ -60,5 +83,6 @@ docs/
 ```bash
 npm run typecheck   # tipos
 npm run lint        # padrões de código
-npm test            # testes do cálculo de meta (src/lib/*.test.ts)
+npm test            # testes do cálculo de meta e do motor de análise
+npm run avaliar     # qualidade das estimativas contra casos de referência (usa a API, tem custo)
 ```

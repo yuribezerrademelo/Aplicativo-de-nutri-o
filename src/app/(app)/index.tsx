@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Botao } from '@/components/Botao';
 import { ResumoMeta } from '@/components/ResumoMeta';
+import { TesteAnalise } from '@/components/TesteAnalise';
 import { formatarNumero } from '@/lib/formatos';
 import { calcularMeta } from '@/lib/metabolismo';
 import { dadosMetabolicosDoPerfil, perfilCompleto } from '@/lib/perfil';
@@ -39,12 +40,7 @@ export default function TelaInicio() {
           <ResumoMeta calculo={calculo} nivelAtividade={dados.nivelAtividade} objetivo={dados.objetivo} />
         </View>
 
-        <View style={[styles.cartao, styles.cartaoEmBreve]}>
-          <Text style={styles.emBreveTitulo}>Em breve</Text>
-          <Text style={styles.nota}>
-            Registrar refeições por foto ou texto e ver o saldo do dia em relação a essa meta.
-          </Text>
-        </View>
+        <TesteAnalise />
 
         <View style={styles.acoes}>
           <Botao titulo="Editar meus dados" onPress={() => router.push('/editar-perfil')} />
@@ -72,7 +68,5 @@ const styles = StyleSheet.create({
   metaUnidade: { fontSize: fonte.subtitulo, fontWeight: '600', color: cores.textoSuave },
   nota: { fontSize: fonte.pequeno, color: cores.textoSuave, lineHeight: 20 },
   divisor: { height: 1, backgroundColor: cores.borda, marginVertical: espaco.sm },
-  cartaoEmBreve: { borderStyle: 'dashed', backgroundColor: 'transparent' },
-  emBreveTitulo: { fontSize: fonte.corpo, fontWeight: '700', color: cores.destaque },
   acoes: { gap: espaco.sm },
 });

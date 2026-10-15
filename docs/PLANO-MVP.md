@@ -1,6 +1,11 @@
 # Plano do MVP
 
-Status: **aprovado em 14/10/2026** · etapa 0 validada no celular em 15/10 · etapa atual: **1 (perfil e meta) concluída no código, aguardando teste no celular**
+Status: **aprovado em 14/10/2026** · etapas 0 e 1 validadas no celular em 15/10 · etapa atual: **2 (motor de análise) concluída no código, aguardando chave da API e deploy**
+
+Decisões da etapa 2:
+- Modelo padrão Claude Sonnet 5.5 com esforço médio; trocável por configuração, para comparar custo e qualidade com o Haiku 5.5 usando `npm run avaliar`.
+- O modelo estima por item; os totais são calculados em código. A faixa do prato combina as incertezas dos itens como erros independentes, em vez de somar todos os mínimos e máximos.
+- Limite de 40 análises por usuário a cada 24 horas, configurável.
 
 Regra adicional da etapa 1: o app aceita apenas adultos (18+), já que as fórmulas de gasto basal usadas são validadas para essa faixa.
 

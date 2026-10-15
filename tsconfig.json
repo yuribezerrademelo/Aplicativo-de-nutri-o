@@ -12,7 +12,12 @@
   "include": [
     "**/*.ts",
     "**/*.tsx",
+    "**/*.mts",
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "supabase/functions/*/index.ts"
   ]
 }
