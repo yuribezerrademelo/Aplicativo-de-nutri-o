@@ -1,6 +1,8 @@
 # Plano do MVP
 
-Status: **aprovado em 14/10/2026** · etapa atual: **0 (fundação) concluída no código, aguardando teste no celular**
+Status: **aprovado em 14/10/2026** · etapa 0 validada no celular em 15/10 · etapa atual: **1 (perfil e meta) concluída no código, aguardando teste no celular**
+
+Regra adicional da etapa 1: o app aceita apenas adultos (18+), já que as fórmulas de gasto basal usadas são validadas para essa faixa.
 
 ## Objetivo
 
