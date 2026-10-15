@@ -8,6 +8,10 @@ export const cores = {
   primaria: '#2F6B4F', // verde-folha
   primariaTexto: '#FFFFFF',
   destaque: '#C8623A', // terracota, para chamar atenção sem alarmar
+  destaqueFundo: '#F8E6DD',
+  primariaFundo: '#E7F0EA',
+  alerta: '#7A5B0C',
+  alertaFundo: '#FBF1D9',
   erro: '#B3261E',
   erroFundo: '#FBEAE8',
 };

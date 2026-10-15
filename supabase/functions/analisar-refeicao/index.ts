@@ -4,13 +4,15 @@
  * Recebe foto e/ou descrição (ou um refinamento), chama a Claude API e devolve
  * a estimativa. Exige usuário logado e aplica um limite de análises por dia.
  *
- * Segredos usados: ANTHROPIC_API_KEY (obrigatório), ANALISE_MODELO,
- * ANALISE_ESFORCO e ANALISE_LIMITE_DIARIO (opcionais).
+ * Segredos usados: ANTHROPIC_API_KEY, ANALISE_MODELO, ANALISE_ESFORCO e
+ * ANALISE_LIMITE_DIARIO. Sem ANTHROPIC_API_KEY, a função roda em modo simulado:
+ * devolve estimativas de exemplo (marcadas como simuladas), sem custo.
  */
 import { withSupabase } from '@supabase/server';
 
 import { analisarRefeicao, ErroAnalise, tipoDaEntrada, validarEntrada } from '../_shared/analise.ts';
 import { VERSAO_PROMPT } from '../_shared/prompt-analise.ts';
+import { simularAnalise } from '../_shared/simulador.ts';
 
 const LIMITE_DIARIO = Number(Deno.env.get('ANALISE_LIMITE_DIARIO') ?? 40);
 
@@ -25,10 +27,6 @@ export default {
     if (!usuarioId) return erro(401, 'nao_autenticado', 'Entre na sua conta para analisar refeições.');
 
     const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
-    if (!apiKey) {
-      console.error('ANTHROPIC_API_KEY não configurada');
-      return erro(500, 'configuracao', 'O serviço de análise ainda não foi configurado.');
-    }
 
     try {
       const entrada = validarEntrada(await req.json().catch(() => null));
@@ -44,11 +42,13 @@ export default {
         return erro(429, 'limite', `Você chegou ao limite de ${LIMITE_DIARIO} análises em 24 horas. Tente mais tarde.`);
       }
 
-      const { resultado, uso, modelo } = await analisarRefeicao(entrada, {
-        apiKey,
-        modelo: Deno.env.get('ANALISE_MODELO') ?? undefined,
-        esforco: (Deno.env.get('ANALISE_ESFORCO') as 'low' | 'medium' | 'high' | undefined) ?? undefined,
-      });
+      const { resultado, uso, modelo } = apiKey
+        ? await analisarRefeicao(entrada, {
+            apiKey,
+            modelo: Deno.env.get('ANALISE_MODELO') ?? undefined,
+            esforco: (Deno.env.get('ANALISE_ESFORCO') as 'low' | 'medium' | 'high' | undefined) ?? undefined,
+          })
+        : { resultado: await simularAnalise(entrada), uso: { entrada: 0, saida: 0 }, modelo: 'simulado' };
 
       const { error: erroRegistro } = await ctx.supabase.from('analises').insert({
         usuario_id: usuarioId,

@@ -1,6 +1,12 @@
 # Plano do MVP
 
-Status: **aprovado em 14/10/2026** · etapas 0 e 1 validadas no celular em 15/10 · etapa atual: **2 (motor de análise) concluída no código, aguardando chave da API e deploy**
+Status: **aprovado em 14/10/2026** · etapas 0 e 1 validadas no celular em 15/10 · etapa 2 pronta (IA real fica para o final) · etapa atual: **3 (fluxo de registro) concluída no código, aguardando deploy da função e teste no celular**
+
+Decisões da etapa 3:
+- Até o protótipo estar validado, o motor roda em **modo simulado** (sem custo). A chave da Claude API entra no final, sem mudança de código.
+- Itens da refeição ficam em `jsonb` dentro de `refeicoes`; os totais ficam em colunas para somar o dia.
+- As fotos não são guardadas no servidor por enquanto (privacidade e simplicidade): servem só para a análise.
+- O saldo do dia combina as margens das refeições do mesmo jeito que o prato combina as margens dos itens.
 
 Decisões da etapa 2:
 - Modelo padrão Claude Sonnet 5.5 com esforço médio; trocável por configuração, para comparar custo e qualidade com o Haiku 5.5 usando `npm run avaliar`.

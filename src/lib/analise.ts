@@ -1,10 +1,14 @@
 import { FunctionsFetchError, FunctionsHttpError } from '@supabase/supabase-js';
 
+import type { ResultadoAnalise } from './estimativa';
 import { supabase } from './supabase';
-// Os tipos vêm do mesmo módulo usado pela edge function, para os dois lados nunca divergirem.
-import type { EntradaAnalise, ResultadoAnalise } from '../../supabase/functions/_shared/analise.ts';
 
-export type { EntradaAnalise, ItemEstimado, Pergunta, ResultadoAnalise } from '../../supabase/functions/_shared/analise.ts';
+export type EntradaAnalise = {
+  imagem?: { base64: string; tipo: 'image/jpeg' | 'image/png' | 'image/webp' };
+  texto?: string;
+  anterior?: ResultadoAnalise;
+  correcao?: string;
+};
 
 type Resposta = { resultado: ResultadoAnalise; erro?: undefined } | { resultado?: undefined; erro: string };
 
@@ -17,6 +21,7 @@ export async function analisarRefeicao(entrada: EntradaAnalise): Promise<Respost
   if (!error && data?.resultado) return { resultado: data.resultado };
 
   if (error instanceof FunctionsHttpError) {
+    if (error.context.status === 404) return { erro: 'O serviço de análise ainda não foi publicado no Supabase.' };
     const corpo = await error.context.json().catch(() => null);
     return { erro: corpo?.erro?.mensagem ?? 'A análise falhou. Tente de novo.' };
   }

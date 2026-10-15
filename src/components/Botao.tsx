@@ -5,7 +5,7 @@ import { cores, espaco, fonte, raio } from '@/theme';
 type Props = {
   titulo: string;
   onPress: () => void;
-  variante?: 'primario' | 'secundario';
+  variante?: 'primario' | 'secundario' | 'contorno';
   carregando?: boolean;
   desabilitado?: boolean;
 };
@@ -22,7 +22,7 @@ export function Botao({ titulo, onPress, variante = 'primario', carregando, desa
       disabled={inativo}
       style={({ pressed }) => [
         styles.base,
-        primario ? styles.primario : styles.secundario,
+        primario ? styles.primario : variante === 'contorno' ? styles.contorno : styles.secundario,
         (pressed || inativo) && { opacity: 0.6 },
       ]}
     >
@@ -47,5 +47,6 @@ const styles = StyleSheet.create({
   },
   primario: { backgroundColor: cores.primaria },
   secundario: { backgroundColor: 'transparent' },
+  contorno: { backgroundColor: cores.superficie, borderWidth: 1.5, borderColor: cores.primaria },
   texto: { fontSize: fonte.corpo, fontWeight: '600' },
 });

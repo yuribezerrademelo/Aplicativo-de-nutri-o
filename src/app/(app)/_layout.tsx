@@ -42,6 +42,7 @@ function NavegacaoApp() {
       <Stack.Protected guard={completo}>
         <Stack.Screen name="index" />
         <Stack.Screen name="editar-perfil" />
+        <Stack.Screen name="registrar" options={{ presentation: 'modal' }} />
       </Stack.Protected>
       <Stack.Protected guard={!completo}>
         <Stack.Screen name="onboarding" />
