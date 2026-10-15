@@ -38,6 +38,7 @@ O MVP está pronto quando o Yuri conseguir usar o app no S24 Ultra durante uma s
 - Tabela TACO/TBCA como fonte dos valores por 100 g
 - Histórico e gráficos semanais, evolução do peso
 - Chat de coaching livre ("o que janto hoje?")
+- Uso ativo da base coletiva nas análises (depende de volume de usuários)
 - Login com Google, notificações, uso offline
 - Publicação na Play Store
 
@@ -50,10 +51,33 @@ O MVP está pronto quando o Yuri conseguir usar o app no S24 Ultra durante uma s
 | 2. Motor de análise | Edge function + prompt + JSON validado; script que roda as fotos de referência | Comparar as estimativas com as das suas conversas antigas |
 | 3. Fluxo de registro | Câmera → estimativa → refinar → confirmar | Registrar refeições reais |
 | 4. Tela do dia e coaching | Saldo do dia, macros, comentário pós-refeição | Usar um dia inteiro |
-| 5. Uso diário | Ajustes de interface, APK instalável | Uma semana usando no lugar do chat |
-| 6. Abrir para amigos | SMTP próprio, confirmação de e-mail, limites | Mandar o APK para 2 ou 3 amigos |
+| 5. Memória do usuário | Correções viram aprendizado: padrões pessoais, refeições parecidas como referência, viés medido | Registrar pratos que você repete e ver a estimativa melhorar |
+| 6. Uso diário | Ajustes de interface, APK instalável | Uma semana usando no lugar do chat |
+| 7. Abrir para amigos | SMTP próprio, confirmação de e-mail, limites, consentimento para a base coletiva | Mandar o APK para 2 ou 3 amigos |
 
 A etapa 2 vem antes da interface de propósito: o motor de análise é o coração do produto e dá para calibrar o prompt com as suas fotos de referência sem depender de tela nenhuma.
+
+## Aprendizado com o uso
+
+O modelo de IA não aprende sozinho: cada análise começa do zero. Em vez de treinar um modelo (o que exigiria milhares de fotos com o peso real), o app aprende guardando o que o usuário corrige e devolvendo isso como contexto nas análises seguintes. São duas camadas.
+
+### Camada 1: memória do usuário (etapa 5)
+
+Útil desde o primeiro usuário.
+
+1. **Rastro das correções.** Cada refeição confirmada fica ligada à análise original da IA, item por item: o que foi estimado (gramas, kcal, preparo) e o que o usuário confirmou depois de ajustar e especificar.
+2. **Padrões pessoais.** A partir desse rastro, o app mantém fatos curtos sobre o usuário, por exemplo: "filés de frango costumam ser finos, ~60 g cada", "batata na airfryer sem óleo", "prato preto de ~26 cm". Esses fatos vão no contexto de cada análise. O usuário pode ver, editar e apagar a própria memória.
+3. **Refeições parecidas como referência.** Quando a descrição ou os itens lembram uma refeição já confirmada, ela entra no pedido como exemplo, com os pesos corrigidos.
+4. **Viés medido.** Comparando estimativa e confirmação, o app calcula tendências como "a foto superestima suas porções de carboidrato em ~40%" e informa isso à IA. Também vira um indicador para o usuário acompanhar.
+
+### Camada 2: base coletiva (estrutura na etapa 7, uso quando houver volume)
+
+Útil a partir de dezenas de usuários ativos; com 2 ou 3 amigos as estatísticas ainda não dizem nada. Por isso a coleta começa cedo e o uso fica para depois.
+
+- **O que guarda:** só dados agregados e anônimos por alimento e preparo, como a distribuição de pesos confirmados ("filé de frango fino: mediana de 62 g"), o viés típico da foto por tipo de alimento, porções comuns de pratos regionais e valores de produtos de marca informados pelos usuários.
+- **Como a IA usa:** ao analisar, o app busca as referências da comunidade para os alimentos encontrados e as inclui no pedido, como já faz com a TACO.
+- **Qualidade:** entram apenas confirmações com peso informado pelo usuário; os números usam mediana (resistente a erros); uma estatística só é usada quando vem de pelo menos 5 pessoas diferentes.
+- **Privacidade (LGPD):** dados de alimentação podem ser considerados dados de saúde. A contribuição para a base coletiva é opcional, com consentimento explícito no app; a base nunca guarda foto, nome, e-mail ou identificador de usuário, e o usuário pode retirar o consentimento.
 
 ## Decisões tomadas
 
