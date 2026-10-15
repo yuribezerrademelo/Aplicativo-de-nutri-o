@@ -1,4 +1,4 @@
-import type { ItemEstimado, ResultadoAnalise } from './estimativa';
+import { somarComFaixa, type ItemEstimado, type ResultadoAnalise } from './estimativa';
 import { supabase } from './supabase';
 
 export type TipoRefeicao = 'cafe_da_manha' | 'almoco' | 'lanche' | 'jantar' | 'ceia' | 'outro';
@@ -18,6 +18,7 @@ export type Refeicao = {
   fibra_g: number;
   itens: ItemEstimado[];
   simulada: boolean;
+  comentario: string | null;
 };
 
 export const OPCOES_TIPO_REFEICAO: { valor: TipoRefeicao; titulo: string }[] = [
@@ -57,7 +58,7 @@ function deLinha(linha: Record<string, unknown>): Refeicao {
 }
 
 const COLUNAS =
-  'id, tipo, consumida_em, origem, descricao, kcal_min, kcal_provavel, kcal_max, proteina_g, carboidrato_g, gordura_g, fibra_g, itens, simulada';
+  'id, tipo, consumida_em, origem, descricao, kcal_min, kcal_provavel, kcal_max, proteina_g, carboidrato_g, gordura_g, fibra_g, itens, simulada, comentario';
 
 /** Refeições do dia (no fuso do aparelho), da mais antiga para a mais recente. */
 export async function listarRefeicoesDoDia(dia = new Date()): Promise<{ refeicoes: Refeicao[] } | { erro: string }> {
@@ -78,10 +79,10 @@ export async function salvarRefeicao(dados: {
   tipo: TipoRefeicao;
   origem: 'foto' | 'texto';
   descricao?: string;
-}): Promise<string | null> {
+}): Promise<{ id: string } | { erro: string }> {
   const { resultado, tipo, origem, descricao } = dados;
   const { total } = resultado;
-  const { error } = await supabase.from('refeicoes').insert({
+  const { data, error } = await supabase.from('refeicoes').insert({
     tipo,
     origem,
     descricao: descricao?.trim() || null,
@@ -98,8 +99,11 @@ export async function salvarRefeicao(dados: {
       observacao: resultado.observacao,
     },
     simulada: !!resultado.simulado,
-  });
-  return error ? 'Não foi possível salvar a refeição. Verifique sua conexão.' : null;
+  })
+    .select('id')
+    .single();
+  if (error || !data) return { erro: 'Não foi possível salvar a refeição. Verifique sua conexão.' };
+  return { id: data.id as string };
 }
 
 export async function apagarRefeicao(id: string): Promise<string | null> {
@@ -108,18 +112,4 @@ export async function apagarRefeicao(id: string): Promise<string | null> {
 }
 
 /** Soma do dia: provável somado; a faixa combina as margens das refeições como erros independentes. */
-export function somarDia(refeicoes: Refeicao[]) {
-  const soma = (f: (r: Refeicao) => number) => refeicoes.reduce((acc, r) => acc + f(r), 0);
-  const provavel = soma((r) => r.kcal_provavel);
-  const abaixo = Math.sqrt(soma((r) => (r.kcal_provavel - r.kcal_min) ** 2));
-  const acima = Math.sqrt(soma((r) => (r.kcal_max - r.kcal_provavel) ** 2));
-  return {
-    kcal_min: Math.max(0, Math.round(provavel - abaixo)),
-    kcal_provavel: Math.round(provavel),
-    kcal_max: Math.round(provavel + acima),
-    proteina_g: soma((r) => r.proteina_g),
-    carboidrato_g: soma((r) => r.carboidrato_g),
-    gordura_g: soma((r) => r.gordura_g),
-    fibra_g: soma((r) => r.fibra_g),
-  };
-}
+export const somarDia = (refeicoes: Refeicao[]) => somarComFaixa(refeicoes);

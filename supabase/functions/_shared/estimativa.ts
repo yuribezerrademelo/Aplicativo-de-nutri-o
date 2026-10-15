@@ -84,13 +84,16 @@ export function normalizarItem(item: ItemEstimado): ItemEstimado {
   };
 }
 
+/** Qualquer coisa com faixa de kcal e macros: um item, uma refeição. */
+export type ComFaixa = Totais;
+
 /**
- * Soma os itens. O provável é a soma simples; a faixa combina as incertezas
- * dos itens como erros independentes (raiz da soma dos quadrados), em vez de
- * somar todos os mínimos e máximos, o que exageraria a margem do prato.
+ * Soma itens (ou refeições). O provável é a soma simples; a faixa combina as
+ * incertezas como erros independentes (raiz da soma dos quadrados), em vez de
+ * somar todos os mínimos e máximos, o que exageraria a margem total.
  */
-export function calcularTotais(itens: ItemEstimado[]): Totais {
-  const soma = (f: (i: ItemEstimado) => number) => itens.reduce((acc, i) => acc + f(i), 0);
+export function somarComFaixa(lista: ComFaixa[]): Totais {
+  const soma = (f: (i: ComFaixa) => number) => lista.reduce((acc, i) => acc + Number(f(i) || 0), 0);
   const provavel = soma((i) => i.kcal_provavel);
   const abaixo = Math.sqrt(soma((i) => (i.kcal_provavel - i.kcal_min) ** 2));
   const acima = Math.sqrt(soma((i) => (i.kcal_max - i.kcal_provavel) ** 2));
@@ -105,6 +108,8 @@ export function calcularTotais(itens: ItemEstimado[]): Totais {
     fibra_g: um(soma((i) => i.fibra_g)),
   };
 }
+
+export const calcularTotais = (itens: ItemEstimado[]): Totais => somarComFaixa(itens);
 
 export function normalizarResultado(saida: SaidaModelo & { simulado?: boolean }): ResultadoAnalise {
   const reconhecido = saida.reconhecido !== false;

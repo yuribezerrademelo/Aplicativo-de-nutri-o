@@ -34,21 +34,23 @@ App de acompanhamento nutricional focado em comida brasileira de verdade. O usu�
    Abra o Expo Go e escaneie o QR code. Celular e computador precisam estar na mesma rede Wi-Fi;
    se não funcionar, use `npx expo start --tunnel`.
 
-## Motor de análise (edge function)
+## Motor de análise e coaching (edge functions)
 
-A análise das refeições roda na edge function `analisar-refeicao`, que chama a Claude API. A chave da API fica só no Supabase, nunca no app.
+A análise das refeições roda na edge function `analisar-refeicao` e o comentário do coach em `comentar-refeicao`; as duas chamam a Claude API. A chave da API fica só no Supabase, nunca no app.
 
 **Modo simulado:** enquanto o segredo `ANTHROPIC_API_KEY` não existir, a função devolve estimativas de exemplo, marcadas como simuladas no app. Serve para desenvolver e testar o fluxo inteiro sem custo. Ao cadastrar a chave, a função passa a usar a IA na hora, sem novo deploy.
 
-1. **Deploy** (gratuito, não precisa de Docker):
+1. **Deploy** das funções (gratuito, não precisa de Docker; sem nome, publica todas):
    ```bash
    npx supabase login
-   npx supabase functions deploy analisar-refeicao --project-ref SEU_PROJECT_REF --use-api
+   npx supabase functions deploy --project-ref SEU_PROJECT_REF --use-api
    ```
 2. **Quando quiser a IA de verdade:** crie a chave em [platform.claude.com](https://platform.claude.com/) → API Keys (uso pago, por créditos) e, no painel do Supabase, em **Edge Functions → Secrets**, adicione `ANTHROPIC_API_KEY`. Opcionais:
    - `ANALISE_MODELO` (padrão `claude-sonnet-5-5`)
    - `ANALISE_ESFORCO`: `low`, `medium` ou `high` (padrão `medium`)
    - `ANALISE_LIMITE_DIARIO`: análises por usuário em 24 h (padrão `40`)
+   - `COACHING_MODELO` (padrão `claude-haiku-5-5`, mais barato para textos curtos)
+   - `COACHING_LIMITE_DIARIO`: comentários por usuário em 24 h (padrão `30`)
 3. **Avaliar a qualidade** das estimativas localmente: veja [avaliacao/README.md](avaliacao/README.md).
 
 Mudou o prompt (`supabase/functions/_shared/prompt-analise.ts`)? Rode `npm run avaliar` antes e depois, atualize `VERSAO_PROMPT` e faça o deploy de novo.
@@ -62,7 +64,7 @@ src/
     entrar.tsx      login e criação de conta
     (app)/          telas que exigem login
       onboarding    primeiro acesso: dados basais, objetivo e meta
-      index         tela inicial: saldo do dia e refeições de hoje
+      index         tela do dia: barra com faixa, macros, refeições e comentários
       registrar     foto/texto → estimativa → especificar → confirmar
       editar-perfil edição dos dados
   components/       componentes reutilizáveis
@@ -73,8 +75,10 @@ supabase/
   migrations/       SQL do banco, em ordem
   functions/
     _shared/        motor de análise: estimativa.ts (tipos e cálculos, usado também pelo app),
-                    analise.ts (prompt, schema, chamada à API) e simulador.ts (modo sem IA)
+                    analise.ts (prompt, schema, chamada à API), simulador.ts (modo sem IA)
+                    e coaching.ts (contexto do dia, prompt sem culpa, versão simulada)
     analisar-refeicao/  edge function: login, limite diário, registro de uso
+    comentar-refeicao/  edge function: comentário do coach no contexto do dia
 scripts/            script de avaliação do motor
 avaliacao/          casos de referência para medir as estimativas
 docs/

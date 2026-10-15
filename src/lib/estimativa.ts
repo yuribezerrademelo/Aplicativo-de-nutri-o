@@ -6,6 +6,7 @@ export {
   ajustarGramas,
   calcularTotais,
   comItens,
+  somarComFaixa,
   type Confianca,
   type ItemEstimado,
   type Pergunta,

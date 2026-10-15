@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Image, KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Botao } from '@/components/Botao';
@@ -8,6 +8,7 @@ import { CampoTexto } from '@/components/CampoTexto';
 import { CartaoItem } from '@/components/CartaoItem';
 import { Chip } from '@/components/Chip';
 import { analisarRefeicao } from '@/lib/analise';
+import { comentarRefeicao } from '@/lib/coaching';
 import { ajustarGramas, comItens, type ResultadoAnalise } from '@/lib/estimativa';
 import { formatarNumero } from '@/lib/formatos';
 import { obterFoto, type FotoPreparada } from '@/lib/imagem';
@@ -28,6 +29,9 @@ export default function TelaRegistrar() {
   const [escolhas, setEscolhas] = useState<Record<number, string>>({});
   const [especificacao, setEspecificacao] = useState('');
   const [tipo, setTipo] = useState<TipoRefeicao>(tipoPeloHorario());
+
+  // Depois de confirmar: comentário do coach (null enquanto carrega).
+  const [concluido, setConcluido] = useState<{ comentario: string | null; simulado?: boolean; erro?: string } | null>(null);
 
   const ocupado = carregando !== null;
 
@@ -95,10 +99,15 @@ export default function TelaRegistrar() {
     if (!resultado?.itens.length) return;
     setErro(null);
     setCarregando('salvar');
-    const falha = await salvarRefeicao({ resultado, tipo, origem: foto ? 'foto' : 'texto', descricao: texto });
+    const salva = await salvarRefeicao({ resultado, tipo, origem: foto ? 'foto' : 'texto', descricao: texto });
     setCarregando(null);
-    if (falha) setErro(falha);
-    else router.back();
+    if ('erro' in salva) {
+      setErro(salva.erro);
+      return;
+    }
+    setConcluido({ comentario: null });
+    const r = await comentarRefeicao(salva.id);
+    setConcluido('erro' in r ? { comentario: null, erro: r.erro } : { comentario: r.comentario, simulado: r.simulado });
   }
 
   function recomecar() {
@@ -111,6 +120,47 @@ export default function TelaRegistrar() {
   }
 
   const correcao = montarCorrecao();
+
+  if (concluido && resultado) {
+    return (
+      <SafeAreaView style={styles.tela}>
+        <View style={styles.cabecalho}>
+          <Text style={styles.titulo}>Registrado!</Text>
+        </View>
+        <ScrollView contentContainerStyle={styles.conteudo}>
+          <View style={[styles.cartao, styles.linhaTotal]}>
+            {foto && <Image source={{ uri: foto.uri }} style={styles.miniatura} accessibilityIgnoresInvertColors />}
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={styles.rotulo}>{OPCOES_TIPO_REFEICAO.find((o) => o.valor === tipo)?.titulo}</Text>
+              <Text style={styles.total}>
+                {formatarNumero(resultado.total.kcal_provavel)} <Text style={styles.unidade}>kcal</Text>
+              </Text>
+              <Text style={styles.nota}>
+                entre {formatarNumero(resultado.total.kcal_min)} e {formatarNumero(resultado.total.kcal_max)} kcal
+              </Text>
+            </View>
+          </View>
+
+          <View style={[styles.cartao, styles.grupoPequeno, { backgroundColor: cores.primariaFundo, borderColor: cores.primariaFundo }]}>
+            <Text style={styles.subtitulo}>Comentário do coach{concluido.simulado ? ' (simulado)' : ''}</Text>
+            {concluido.comentario ? (
+              <Text style={styles.texto}>{concluido.comentario}</Text>
+            ) : concluido.erro ? (
+              <Text style={styles.nota}>{concluido.erro} A refeição foi salva normalmente.</Text>
+            ) : (
+              <View style={styles.linha}>
+                <ActivityIndicator color={cores.primaria} />
+                <Text style={styles.nota}>Olhando o seu dia…</Text>
+              </View>
+            )}
+          </View>
+        </ScrollView>
+        <View style={styles.rodape}>
+          <Botao titulo="Voltar ao dia" onPress={() => router.back()} />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.tela}>

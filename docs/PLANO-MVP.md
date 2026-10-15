@@ -1,6 +1,12 @@
 # Plano do MVP
 
-Status: **aprovado em 14/10/2026** · etapas 0 e 1 validadas no celular em 15/10 · etapa 2 pronta (IA real fica para o final) · etapa atual: **3 (fluxo de registro) concluída no código, aguardando deploy da função e teste no celular**
+Status: **aprovado em 14/10/2026** · etapas 0 a 3 validadas no celular em 15/10 (IA real fica para o final) · etapa atual: **4 (tela do dia e coaching) concluída no código, aguardando migração, deploy e teste no celular**
+
+Decisões da etapa 4:
+- Coaching em função própria (`comentar-refeicao`), chamada depois de confirmar; o comentário fica salvo na refeição.
+- Modelo padrão do coaching: Claude Haiku 5.5 com esforço baixo (texto curto, custo menor); trocável por configuração.
+- Regras do coach: 2 ou 3 frases, sem culpa, no máximo uma sugestão prática; nunca sugerir jejum, pular refeição ou exercício para "compensar".
+- A barra do dia mostra a margem dos dois lados do provável: trecho mais claro dentro do preenchimento (abaixo) e faixa verde-clara depois dele (acima).
 
 Decisões da etapa 3:
 - Até o protótipo estar validado, o motor roda em **modo simulado** (sem custo). A chave da Claude API entra no final, sem mudança de código.

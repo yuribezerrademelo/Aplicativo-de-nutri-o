@@ -5,3 +5,7 @@ project_id = "aplicativo-de-nutricao"
 # O gateway valida o login antes da função rodar; a função valida de novo.
 verify_jwt = true
 import_map = "./functions/analisar-refeicao/deno.json"
+
+[functions.comentar-refeicao]
+verify_jwt = true
+import_map = "./functions/comentar-refeicao/deno.json"
