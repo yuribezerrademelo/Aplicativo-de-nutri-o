@@ -42,9 +42,12 @@ src/
     _layout.tsx     raiz: decide telas de logado / não logado
     entrar.tsx      login e criação de conta
     (app)/          telas que exigem login
+      onboarding    primeiro acesso: dados basais, objetivo e meta
+      index         tela inicial
+      editar-perfil edição dos dados
   components/       componentes reutilizáveis
-  lib/              cliente Supabase e utilitários
-  providers/        contextos (sessão)
+  lib/              cliente Supabase, cálculo da meta e utilitários
+  providers/        contextos (sessão e perfil)
   theme.ts          cores, espaçamentos e fontes
 supabase/
   migrations/       SQL do banco, em ordem
@@ -55,5 +58,7 @@ docs/
 ## Verificação
 
 ```bash
-npm run typecheck
+npm run typecheck   # tipos
+npm run lint        # padrões de código
+npm test            # testes do cálculo de meta (src/lib/*.test.ts)
 ```

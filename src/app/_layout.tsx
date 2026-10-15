@@ -47,7 +47,7 @@ function ConfiguracaoFaltando() {
       <Text style={styles.titulo}>Falta conectar o Supabase</Text>
       <Text style={styles.texto}>
         Crie o arquivo .env na raiz do projeto (use o .env.example como modelo), preencha a URL e
-        a publishable key do seu projeto e reinicie com "npx expo start --clear".
+        a publishable key do seu projeto e reinicie com “npx expo start --clear”.
       </Text>
     </View>
   );
