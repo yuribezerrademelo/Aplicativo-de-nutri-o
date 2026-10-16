@@ -36,7 +36,11 @@ App de acompanhamento nutricional focado em comida brasileira de verdade. O usu�
 
 ## Motor de análise e coaching (edge functions)
 
-A análise das refeições roda na edge function `analisar-refeicao` e o comentário do coach em `comentar-refeicao`; as duas chamam a Claude API. A chave da API fica só no Supabase, nunca no app.
+Três edge functions:
+
+- `analisar-refeicao`: estima a refeição (foto, texto ou refinamento) usando a memória do usuário;
+- `comentar-refeicao`: depois de confirmar, aprende com as correções, contribui com a base coletiva (se autorizado) e gera o comentário do coach;
+- `conta`: retirar o consentimento da base coletiva e excluir a conta. A chave da API fica só no Supabase, nunca no app.
 
 **Modo simulado:** enquanto o segredo `ANTHROPIC_API_KEY` não existir, a função devolve estimativas de exemplo, marcadas como simuladas no app. Serve para desenvolver e testar o fluxo inteiro sem custo. Ao cadastrar a chave, a função passa a usar a IA na hora, sem novo deploy.
 
@@ -51,9 +55,20 @@ A análise das refeições roda na edge function `analisar-refeicao` e o coment�
    - `ANALISE_LIMITE_DIARIO`: análises por usuário em 24 h (padrão `40`)
    - `COACHING_MODELO` (padrão `claude-haiku-5-5`, mais barato para textos curtos)
    - `COACHING_LIMITE_DIARIO`: comentários por usuário em 24 h (padrão `30`)
+   - `CONTRIBUICAO_SAL`: texto aleatório e secreto usado para pseudonimizar a base coletiva. Sem ele, nada é coletado.
+     Para gerar: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
 3. **Avaliar a qualidade** das estimativas localmente: veja [avaliacao/README.md](avaliacao/README.md).
 
 Mudou o prompt (`supabase/functions/_shared/prompt-analise.ts`)? Rode `npm run avaliar` antes e depois, atualize `VERSAO_PROMPT` e faça o deploy de novo.
+
+## Antes de abrir para amigos
+
+1. **Confirmação de e-mail:** religue em **Authentication → Sign In / Providers → Email → Confirm email**.
+2. **SMTP próprio:** o envio de e-mail padrão do Supabase tem limite baixo. Configure um provedor (Resend, Brevo e similares têm plano gratuito) em **Authentication → Emails → SMTP Settings**.
+3. **Base coletiva:** cadastre o segredo `CONTRIBUICAO_SAL` (veja acima). Cada pessoa decide se contribui em **Conta e privacidade**.
+4. **IA real:** cadastre `ANTHROPIC_API_KEY` com créditos; os limites diários seguram o custo.
+5. **APK:** gere e compartilhe o link (seção abaixo).
+6. **Senha esquecida:** o app ainda não tem "esqueci minha senha"; por enquanto, redefina pelo painel (**Authentication → Users**).
 
 ## Gerar o APK (instalar sem o Expo Go)
 
@@ -88,7 +103,10 @@ src/
     (app)/          telas que exigem login
       onboarding    primeiro acesso: dados basais, objetivo e meta
       index         tela do dia: barra com faixa, macros, refeições e comentários
-      registrar     foto/texto → estimativa → especificar → confirmar
+      registrar     foto/texto → estimativa → especificar → confirmar (com horário)
+      refeicao/[id] editar uma refeição salva
+      memoria       o que o app aprendeu sobre você
+      conta         privacidade, sair e excluir a conta
       editar-perfil edição dos dados
   components/       componentes reutilizáveis
   lib/              cliente Supabase, cálculo da meta e utilitários
@@ -99,9 +117,11 @@ supabase/
   functions/
     _shared/        motor de análise: estimativa.ts (tipos e cálculos, usado também pelo app),
                     analise.ts (prompt, schema, chamada à API), simulador.ts (modo sem IA)
-                    e coaching.ts (contexto do dia, prompt sem culpa, versão simulada)
+                    coaching.ts (contexto do dia, prompt sem culpa, versão simulada),
+                    memoria.ts e aprendizado.ts (memória do usuário) e contribuicao.ts (base coletiva)
     analisar-refeicao/  edge function: login, limite diário, registro de uso
-    comentar-refeicao/  edge function: comentário do coach no contexto do dia
+    comentar-refeicao/  edge function: aprendizado, base coletiva e comentário do coach
+    conta/              edge function: retirar consentimento e excluir conta
 scripts/            script de avaliação do motor
 avaliacao/          casos de referência para medir as estimativas
 docs/

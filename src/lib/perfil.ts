@@ -16,10 +16,12 @@ export type Perfil = {
   ritmo: Ritmo | null;
   meta_kcal: number | null;
   meta_ajustada_manualmente: boolean;
+  contribuir_base_coletiva?: boolean;
+  consentimento_em?: string | null;
 };
 
-/** Campos que o formulário grava (o id vem da sessão). */
-export type DadosPerfil = Omit<Perfil, 'id'>;
+/** Campos que o formulário de dados grava (o id vem da sessão; privacidade tem tela própria). */
+export type DadosPerfil = Omit<Perfil, 'id' | 'contribuir_base_coletiva' | 'consentimento_em'>;
 
 /** O perfil está pronto quando tem tudo o que o cálculo da meta precisa. */
 export function perfilCompleto(p: Perfil | null): p is Perfil & {

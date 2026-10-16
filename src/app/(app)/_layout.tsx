@@ -45,6 +45,7 @@ function NavegacaoApp() {
         <Stack.Screen name="registrar" options={{ presentation: 'modal' }} />
         <Stack.Screen name="memoria" />
         <Stack.Screen name="refeicao/[id]" />
+        <Stack.Screen name="conta" />
       </Stack.Protected>
       <Stack.Protected guard={!completo}>
         <Stack.Screen name="onboarding" />

@@ -1,6 +1,13 @@
 # Plano do MVP
 
-Status: **aprovado em 14/10/2026** · etapas 0 a 3 validadas no celular em 15/10 (IA real fica para o final) · etapa atual: **4 (tela do dia e coaching) concluída no código, aguardando migração, deploy e teste no celular**
+Status: **aprovado em 14/10/2026** · etapas 0 a 3 validadas no celular em 15/10 · **etapas 4 a 7 concluídas no código em 16/10**, aguardando o teste completo do app (decisão do Yuri: terminar tudo e testar de ponta a ponta)
+
+Decisões das etapas 5 a 7:
+- Memória: a refeição guarda a primeira estimativa e as especificações; porções corrigidas em 25% ou mais viram fatos automáticos; com a API, o Haiku extrai até 2 fatos duradouros das especificações. A análise recebe fatos, alimentos frequentes (30 dias) e o viés da estimativa inicial.
+- Editar refeição (tipo, horário, itens), registrar com horário e em dias anteriores, navegar entre dias.
+- APK pelo EAS Build (perfil `preview`); chaves públicas do Supabase como variáveis de ambiente do EAS.
+- Base coletiva: só com consentimento, só porções com peso informado pelo usuário, contribuinte pseudonimizado (SHA-256 com sal secreto), sem horário; referências só com 5 pessoas ou mais. Retirar o consentimento apaga as contribuições.
+- Excluir conta apaga tudo (cascata) e as contribuições.
 
 Decisões da etapa 4:
 - Coaching em função própria (`comentar-refeicao`), chamada depois de confirmar; o comentário fica salvo na refeição.

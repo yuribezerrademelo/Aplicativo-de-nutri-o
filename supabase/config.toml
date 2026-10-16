@@ -9,3 +9,7 @@ import_map = "./functions/analisar-refeicao/deno.json"
 [functions.comentar-refeicao]
 verify_jwt = true
 import_map = "./functions/comentar-refeicao/deno.json"
+
+[functions.conta]
+verify_jwt = true
+import_map = "./functions/conta/deno.json"

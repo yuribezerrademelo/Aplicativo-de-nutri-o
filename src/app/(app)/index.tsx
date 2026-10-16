@@ -10,7 +10,6 @@ import { dataParaIso, formatarNumero, inicioDoDia, rotuloDoDia } from '@/lib/for
 import { calcularMeta } from '@/lib/metabolismo';
 import { dadosMetabolicosDoPerfil, perfilCompleto } from '@/lib/perfil';
 import { apagarRefeicao, listarRefeicoesDoDia, somarDia, TITULO_TIPO_REFEICAO, type Refeicao } from '@/lib/refeicoes';
-import { supabase } from '@/lib/supabase';
 import { usePerfil } from '@/providers/PerfilProvider';
 import { cores, espaco, fonte, raio } from '@/theme';
 
@@ -211,7 +210,7 @@ export default function TelaInicio() {
         <View style={styles.acoes}>
           <Botao titulo="Minha memória" variante="contorno" onPress={() => router.push('/memoria')} />
           <Botao titulo="Editar meus dados" variante="contorno" onPress={() => router.push('/editar-perfil')} />
-          <Botao titulo="Sair" variante="secundario" onPress={() => supabase.auth.signOut()} />
+          <Botao titulo="Conta e privacidade" variante="secundario" onPress={() => router.push('/conta')} />
         </View>
       </ScrollView>
     </SafeAreaView>

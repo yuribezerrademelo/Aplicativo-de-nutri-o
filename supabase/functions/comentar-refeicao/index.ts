@@ -15,6 +15,7 @@ import { ErroAnalise } from '../_shared/analise.ts';
 import { extrairFatosComIA } from '../_shared/aprendizado.ts';
 import type { ItemEstimado } from '../_shared/estimativa.ts';
 import { aprenderComCorrecoes, type Memoria } from '../_shared/memoria.ts';
+import { codigoContribuinte, selecionarContribuicoes } from '../_shared/contribuicao.ts';
 import {
   gerarComentario,
   simularComentario,
@@ -57,7 +58,7 @@ export default {
 
       const { data: perfil, error: erroPerfil } = await ctx.supabase
         .from('perfis')
-        .select('nome, objetivo, meta_kcal, peso_kg')
+        .select('nome, objetivo, meta_kcal, peso_kg, contribuir_base_coletiva')
         .eq('id', usuarioId)
         .single();
       if (erroPerfil || !perfil) return erro(404, 'perfil', 'Complete seu perfil primeiro.');
@@ -75,11 +76,24 @@ export default {
 
       const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
 
-      // 1. Aprender com as correções desta refeição.
+      // 1. Aprender com as correções desta refeição (e contribuir com a base coletiva, se autorizado).
       try {
         await aprender(ctx.supabase, usuarioId, refeicaoId, apiKey);
       } catch (e) {
         console.error('Falha ao aprender com a refeição', e);
+      }
+      const sal = Deno.env.get('CONTRIBUICAO_SAL');
+      if (perfil.contribuir_base_coletiva && sal) {
+        try {
+          const { data: r } = await ctx.supabase.from('refeicoes').select('itens, analise_original').eq('id', refeicaoId).single();
+          const linhas = selecionarContribuicoes(r?.analise_original, (r?.itens ?? []) as ItemEstimado[], await codigoContribuinte(usuarioId, sal));
+          if (linhas.length) {
+            const { error } = await ctx.supabaseAdmin.from('contribuicoes').insert(linhas);
+            if (error) console.error('Falha ao registrar contribuição', error);
+          }
+        } catch (e) {
+          console.error('Falha na contribuição', e);
+        }
       }
 
       // 2. Comentário do coach.
