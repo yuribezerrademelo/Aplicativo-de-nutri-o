@@ -64,3 +64,40 @@ export function formatarPercentual(fracao: number): string {
   if (valor === 0) return '0%';
   return `${fracao < 0 ? '−' : '+'}${valor}%`;
 }
+
+/** Insere os dois-pontos enquanto o usuário digita: "1230" → "12:30". */
+export function mascararHora(texto: string): string {
+  const d = texto.replace(/\D/g, '').slice(0, 4);
+  return d.length <= 2 ? d : `${d.slice(0, 2)}:${d.slice(2)}`;
+}
+
+/** "HH:MM" → { horas, minutos }, ou null se inválido. */
+export function lerHora(texto: string): { horas: number; minutos: number } | null {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(texto.trim());
+  if (!m) return null;
+  const [horas, minutos] = [Number(m[1]), Number(m[2])];
+  return horas <= 23 && minutos <= 59 ? { horas, minutos } : null;
+}
+
+/** Date → "HH:MM" no fuso do aparelho. */
+export function horaDe(d: Date): string {
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+/** Início do dia (00:00 local) de uma data. */
+export function inicioDoDia(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+/** Junta o dia de `dia` com o horário "HH:MM" (fuso do aparelho). */
+export function combinarDiaHora(dia: Date, hora: { horas: number; minutos: number }): Date {
+  return new Date(dia.getFullYear(), dia.getMonth(), dia.getDate(), hora.horas, hora.minutos);
+}
+
+/** "Hoje", "Ontem" ou "qua., 14 de out.". */
+export function rotuloDoDia(dia: Date, hoje = new Date()): string {
+  const diferenca = Math.round((inicioDoDia(hoje).getTime() - inicioDoDia(dia).getTime()) / 86_400_000);
+  if (diferenca === 0) return 'Hoje';
+  if (diferenca === 1) return 'Ontem';
+  return dia.toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' });
+}

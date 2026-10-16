@@ -1,4 +1,4 @@
-import { somarComFaixa, type ItemEstimado, type ResultadoAnalise } from './estimativa';
+import { calcularTotais, somarComFaixa, type ItemEstimado, type ResultadoAnalise } from './estimativa';
 import { supabase } from './supabase';
 
 export type TipoRefeicao = 'cafe_da_manha' | 'almoco' | 'lanche' | 'jantar' | 'ceia' | 'outro';
@@ -83,12 +83,15 @@ export async function salvarRefeicao(dados: {
   analiseOriginal?: ResultadoAnalise | null;
   /** O que o usuário escreveu ao especificar o prato. */
   especificacoes?: string[];
+  /** Quando a refeição aconteceu (padrão: agora). */
+  consumidaEm?: Date;
 }): Promise<{ id: string } | { erro: string }> {
-  const { resultado, tipo, origem, descricao, analiseOriginal, especificacoes } = dados;
+  const { resultado, tipo, origem, descricao, analiseOriginal, especificacoes, consumidaEm } = dados;
   const { total } = resultado;
   const { data, error } = await supabase.from('refeicoes').insert({
     tipo,
     origem,
+    consumida_em: (consumidaEm ?? new Date()).toISOString(),
     descricao: descricao?.trim() || null,
     kcal_min: total.kcal_min,
     kcal_provavel: total.kcal_provavel,
@@ -110,6 +113,36 @@ export async function salvarRefeicao(dados: {
     .single();
   if (error || !data) return { erro: 'Não foi possível salvar a refeição. Verifique sua conexão.' };
   return { id: data.id as string };
+}
+
+export async function buscarRefeicao(id: string): Promise<{ refeicao: Refeicao } | { erro: string }> {
+  const { data, error } = await supabase.from('refeicoes').select(COLUNAS).eq('id', id).single();
+  if (error || !data) return { erro: 'Não foi possível carregar a refeição.' };
+  return { refeicao: deLinha(data) };
+}
+
+/** Atualiza tipo, horário e itens; os totais são recalculados a partir dos itens. */
+export async function atualizarRefeicao(
+  id: string,
+  dados: { tipo: TipoRefeicao; consumidaEm: Date; itens: ItemEstimado[] },
+): Promise<string | null> {
+  const total = calcularTotais(dados.itens);
+  const { error } = await supabase
+    .from('refeicoes')
+    .update({
+      tipo: dados.tipo,
+      consumida_em: dados.consumidaEm.toISOString(),
+      itens: dados.itens,
+      kcal_min: total.kcal_min,
+      kcal_provavel: total.kcal_provavel,
+      kcal_max: total.kcal_max,
+      proteina_g: total.proteina_g,
+      carboidrato_g: total.carboidrato_g,
+      gordura_g: total.gordura_g,
+      fibra_g: total.fibra_g,
+    })
+    .eq('id', id);
+  return error ? 'Não foi possível salvar as alterações.' : null;
 }
 
 export async function apagarRefeicao(id: string): Promise<string | null> {

@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { BarraDoDia } from '@/components/BarraDoDia';
 import { Botao } from '@/components/Botao';
 import { ResumoMeta } from '@/components/ResumoMeta';
-import { formatarNumero } from '@/lib/formatos';
+import { dataParaIso, formatarNumero, inicioDoDia, rotuloDoDia } from '@/lib/formatos';
 import { calcularMeta } from '@/lib/metabolismo';
 import { dadosMetabolicosDoPerfil, perfilCompleto } from '@/lib/perfil';
 import { apagarRefeicao, listarRefeicoesDoDia, somarDia, TITULO_TIPO_REFEICAO, type Refeicao } from '@/lib/refeicoes';
@@ -23,12 +23,23 @@ export default function TelaInicio() {
   const [erro, setErro] = useState<string | null>(null);
   const [mostrarMeta, setMostrarMeta] = useState(false);
   const [aberta, setAberta] = useState<string | null>(null);
+  const [diaSelecionado, setDiaSelecionado] = useState(() => inicioDoDia(new Date()));
+  const ehHoje = rotuloDoDia(diaSelecionado) === 'Hoje';
 
-  // Recarrega sempre que a tela volta ao foco (por exemplo, depois de registrar).
+  function mudarDia(delta: number) {
+    const novo = new Date(diaSelecionado);
+    novo.setDate(novo.getDate() + delta);
+    if (novo.getTime() > inicioDoDia(new Date()).getTime()) return;
+    setRefeicoes(null);
+    setAberta(null);
+    setDiaSelecionado(novo);
+  }
+
+  // Recarrega quando a tela volta ao foco (por exemplo, depois de registrar) ou o dia muda.
   useFocusEffect(
     useCallback(() => {
       let ativo = true;
-      listarRefeicoesDoDia().then((r) => {
+      listarRefeicoesDoDia(diaSelecionado).then((r) => {
         if (!ativo) return;
         if ('erro' in r) setErro(r.erro);
         else {
@@ -39,7 +50,7 @@ export default function TelaInicio() {
       return () => {
         ativo = false;
       };
-    }, []),
+    }, [diaSelecionado]),
   );
 
   if (!perfilCompleto(perfil)) return null;
@@ -47,7 +58,7 @@ export default function TelaInicio() {
   const dados = dadosMetabolicosDoPerfil(perfil)!;
   const calculo = calcularMeta(dados);
   const meta = perfil.meta_kcal;
-  const dia = somarDia(refeicoes ?? []);
+  const totais = somarDia(refeicoes ?? []);
   const vazio = !refeicoes?.length;
 
   function confirmarApagar(r: Refeicao) {
@@ -71,23 +82,50 @@ export default function TelaInicio() {
         <Text style={styles.saudacao}>{perfil.nome ? `Olá, ${perfil.nome}!` : 'Olá!'}</Text>
 
         <View style={styles.cartao}>
-          <BarraDoDia meta={meta} kcalMin={dia.kcal_min} kcalProvavel={dia.kcal_provavel} kcalMax={dia.kcal_max} vazio={vazio} />
+          <View style={styles.navDia}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Dia anterior" onPress={() => mudarDia(-1)} hitSlop={12}>
+              <Text style={styles.seta}>‹</Text>
+            </Pressable>
+            <Text style={styles.subtitulo}>{rotuloDoDia(diaSelecionado)}</Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Próximo dia"
+              onPress={() => mudarDia(1)}
+              disabled={ehHoje}
+              hitSlop={12}
+            >
+              <Text style={[styles.seta, ehHoje && { opacity: 0.25 }]}>›</Text>
+            </Pressable>
+          </View>
+          <BarraDoDia
+            rotulo={ehHoje ? 'Hoje' : 'No dia'}
+            meta={meta}
+            kcalMin={totais.kcal_min}
+            kcalProvavel={totais.kcal_provavel}
+            kcalMax={totais.kcal_max}
+            vazio={vazio}
+          />
           <View style={styles.macros}>
-            <Macro rotulo="Proteína" valor={dia.proteina_g} />
-            <Macro rotulo="Carboidrato" valor={dia.carboidrato_g} />
-            <Macro rotulo="Gordura" valor={dia.gordura_g} />
-            <Macro rotulo="Fibra" valor={dia.fibra_g} />
+            <Macro rotulo="Proteína" valor={totais.proteina_g} />
+            <Macro rotulo="Carboidrato" valor={totais.carboidrato_g} />
+            <Macro rotulo="Gordura" valor={totais.gordura_g} />
+            <Macro rotulo="Fibra" valor={totais.fibra_g} />
           </View>
         </View>
 
-        <Botao titulo="Registrar refeição" onPress={() => router.push('/registrar')} />
+        <Botao
+          titulo={ehHoje ? 'Registrar refeição' : `Registrar refeição em ${rotuloDoDia(diaSelecionado).toLowerCase()}`}
+          onPress={() => router.push(ehHoje ? '/registrar' : { pathname: '/registrar', params: { dia: dataParaIso(diaSelecionado) } })}
+        />
 
         <View style={styles.grupo}>
-          <Text style={styles.subtitulo}>Refeições de hoje</Text>
+          <Text style={styles.subtitulo}>{ehHoje ? 'Refeições de hoje' : 'Refeições do dia'}</Text>
           {refeicoes === null && !erro && <ActivityIndicator color={cores.primaria} />}
           {erro && <Text style={styles.erro}>{erro}</Text>}
           {refeicoes?.length === 0 && (
-            <Text style={styles.nota}>Nada registrado ainda. Tire uma foto do próximo prato ou descreva o que comeu.</Text>
+            <Text style={styles.nota}>
+              {ehHoje ? 'Nada registrado ainda. Tire uma foto do próximo prato ou descreva o que comeu.' : 'Nada registrado neste dia.'}
+            </Text>
           )}
           {refeicoes?.map((r) => {
             const expandida = aberta === r.id;
@@ -132,6 +170,13 @@ export default function TelaInicio() {
                     <Text style={styles.nota}>
                       P {formatarNumero(r.proteina_g)} g · C {formatarNumero(r.carboidrato_g)} g · G {formatarNumero(r.gordura_g)} g
                     </Text>
+                    <Pressable
+                      accessibilityRole="button"
+                      onPress={() => router.push({ pathname: '/refeicao/[id]', params: { id: r.id } })}
+                      hitSlop={8}
+                    >
+                      <Text style={styles.link}>Editar refeição</Text>
+                    </Pressable>
                   </View>
                 )}
 
@@ -143,7 +188,7 @@ export default function TelaInicio() {
               </Pressable>
             );
           })}
-          {!vazio && <Text style={styles.dica}>Toque numa refeição para ver detalhes; toque longo para apagar.</Text>}
+          {!vazio && <Text style={styles.dica}>Toque numa refeição para ver detalhes e editar; toque longo para apagar.</Text>}
         </View>
 
         <View style={styles.cartao}>
@@ -195,6 +240,8 @@ const styles = StyleSheet.create({
     borderColor: cores.borda,
   },
   macros: { flexDirection: 'row', justifyContent: 'space-between', gap: espaco.sm },
+  navDia: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  seta: { fontSize: 28, lineHeight: 30, color: cores.primaria, paddingHorizontal: espaco.sm },
   macro: { flex: 1, alignItems: 'center', paddingVertical: espaco.sm, borderRadius: raio.sm, backgroundColor: cores.fundo },
   macroValor: { fontSize: fonte.corpo, fontWeight: '700', color: cores.texto },
   macroRotulo: { fontSize: 12, color: cores.textoSuave },

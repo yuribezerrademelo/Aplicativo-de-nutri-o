@@ -10,6 +10,8 @@ type Props = {
   kcalMax: number;
   /** Sem refeições ainda: mostra só a meta, sem faixa. */
   vazio?: boolean;
+  /** Rótulo do canto esquerdo (padrão "Hoje"). */
+  rotulo?: string;
 };
 
 const pct = (v: number, escala: number) => `${Math.max(0, Math.min(100, (v / escala) * 100))}%` as const;
@@ -19,7 +21,7 @@ const pct = (v: number, escala: number) => `${Math.max(0, Math.min(100, (v / esc
  * mostra a margem (mínimo a máximo) e um traço marca a meta. O número provável
  * fica no canto superior e a faixa em texto menor logo abaixo.
  */
-export function BarraDoDia({ meta, kcalMin, kcalProvavel, kcalMax, vazio }: Props) {
+export function BarraDoDia({ meta, kcalMin, kcalProvavel, kcalMax, vazio, rotulo = 'Hoje' }: Props) {
   // Escala com folga para a faixa caber quando passa da meta.
   const escala = Math.max(meta, vazio ? 0 : kcalMax) * 1.08;
   const passou = kcalProvavel > meta;
@@ -32,7 +34,7 @@ export function BarraDoDia({ meta, kcalMin, kcalProvavel, kcalMax, vazio }: Prop
   return (
     <View accessible accessibilityRole="progressbar" accessibilityLabel={descricao}>
       <View style={styles.topo}>
-        <Text style={styles.rotulo}>Hoje</Text>
+        <Text style={styles.rotulo}>{rotulo}</Text>
         <Text style={styles.numeros}>
           <Text style={[styles.consumido, passou && { color: cores.destaque }]}>{formatarNumero(kcalProvavel)}</Text>
           <Text style={styles.meta}> / {formatarNumero(meta)} kcal</Text>

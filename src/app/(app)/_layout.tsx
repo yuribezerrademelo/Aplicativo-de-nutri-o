@@ -44,6 +44,7 @@ function NavegacaoApp() {
         <Stack.Screen name="editar-perfil" />
         <Stack.Screen name="registrar" options={{ presentation: 'modal' }} />
         <Stack.Screen name="memoria" />
+        <Stack.Screen name="refeicao/[id]" />
       </Stack.Protected>
       <Stack.Protected guard={!completo}>
         <Stack.Screen name="onboarding" />

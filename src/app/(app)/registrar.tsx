@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Image, KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -10,7 +10,7 @@ import { Chip } from '@/components/Chip';
 import { analisarRefeicao } from '@/lib/analise';
 import { comentarRefeicao } from '@/lib/coaching';
 import { ajustarGramas, comItens, type ResultadoAnalise } from '@/lib/estimativa';
-import { formatarNumero } from '@/lib/formatos';
+import { combinarDiaHora, formatarNumero, horaDe, isoParaData, lerHora, mascararHora, rotuloDoDia } from '@/lib/formatos';
 import { obterFoto, type FotoPreparada } from '@/lib/imagem';
 import { OPCOES_TIPO_REFEICAO, salvarRefeicao, tipoPeloHorario, type TipoRefeicao } from '@/lib/refeicoes';
 import { cores, espaco, fonte, raio } from '@/theme';
@@ -19,6 +19,11 @@ type Carregando = 'foto' | 'analise' | 'refinar' | 'salvar' | null;
 
 /** Fluxo de registro: foto e/ou texto → estimativa → especificar (opcional) → confirmar. */
 export default function TelaRegistrar() {
+  // Dia da refeição: hoje, ou o dia que estava aberto na tela inicial (?dia=AAAA-MM-DD).
+  const params = useLocalSearchParams<{ dia?: string }>();
+  const [dia] = useState(() => (params.dia ? isoParaData(params.dia) : new Date()));
+  const ehHoje = rotuloDoDia(dia) === 'Hoje';
+  const [horario, setHorario] = useState(() => (ehHoje ? horaDe(new Date()) : '12:00'));
   const [foto, setFoto] = useState<FotoPreparada | null>(null);
   const [texto, setTexto] = useState('');
   const [resultado, setResultado] = useState<ResultadoAnalise | null>(null);
@@ -31,7 +36,7 @@ export default function TelaRegistrar() {
   // Refinamento: opção escolhida em cada pergunta + texto livre.
   const [escolhas, setEscolhas] = useState<Record<number, string>>({});
   const [especificacao, setEspecificacao] = useState('');
-  const [tipo, setTipo] = useState<TipoRefeicao>(tipoPeloHorario());
+  const [tipo, setTipo] = useState<TipoRefeicao>(() => tipoPeloHorario(ehHoje ? new Date() : combinarDiaHora(dia, { horas: 12, minutos: 0 })));
 
   // Depois de confirmar: comentário do coach (null enquanto carrega).
   const [concluido, setConcluido] = useState<{ comentario: string | null; simulado?: boolean; erro?: string } | null>(null);
@@ -103,6 +108,16 @@ export default function TelaRegistrar() {
 
   async function confirmar() {
     if (!resultado?.itens.length) return;
+    const hora = lerHora(horario);
+    if (!hora) {
+      setErro('Informe o horário no formato HH:MM.');
+      return;
+    }
+    const consumidaEm = combinarDiaHora(dia, hora);
+    if (consumidaEm.getTime() > Date.now() + 5 * 60 * 1000) {
+      setErro('O horário está no futuro. Confira a hora da refeição.');
+      return;
+    }
     setErro(null);
     setCarregando('salvar');
     const salva = await salvarRefeicao({
@@ -112,6 +127,7 @@ export default function TelaRegistrar() {
       descricao: texto,
       analiseOriginal: original,
       especificacoes,
+      consumidaEm,
     });
     setCarregando(null);
     if ('erro' in salva) {
@@ -119,7 +135,7 @@ export default function TelaRegistrar() {
       return;
     }
     setConcluido({ comentario: null });
-    const r = await comentarRefeicao(salva.id);
+    const r = await comentarRefeicao(salva.id, consumidaEm);
     setConcluido('erro' in r ? { comentario: null, erro: r.erro } : { comentario: r.comentario, simulado: r.simulado });
   }
 
@@ -343,6 +359,19 @@ export default function TelaRegistrar() {
 
                   <View style={styles.grupoPequeno}>
                     <Text style={styles.subtitulo}>Qual refeição foi essa?</Text>
+                    <View style={styles.linhaHorario}>
+                      <Text style={styles.nota}>{rotuloDoDia(dia)}, às</Text>
+                      <View style={{ width: 110 }}>
+                        <CampoTexto
+                          rotulo="Horário"
+                          value={horario}
+                          onChangeText={(t) => setHorario(mascararHora(t))}
+                          keyboardType="number-pad"
+                          maxLength={5}
+                          placeholder="HH:MM"
+                        />
+                      </View>
+                    </View>
                     <View style={styles.chips}>
                       {OPCOES_TIPO_REFEICAO.map((o) => (
                         <Chip key={o.valor} titulo={o.titulo} selecionado={tipo === o.valor} onPress={() => setTipo(o.valor)} />
@@ -403,6 +432,7 @@ const styles = StyleSheet.create({
   grupoPequeno: { gap: espaco.sm },
   linha: { flexDirection: 'row', gap: espaco.md },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: espaco.sm },
+  linhaHorario: { flexDirection: 'row', alignItems: 'flex-end', gap: espaco.md },
   foto: { width: '100%', aspectRatio: 4 / 3, borderRadius: raio.lg, backgroundColor: cores.borda },
   miniatura: { width: 72, height: 72, borderRadius: raio.md, backgroundColor: cores.borda },
   bloco: {
