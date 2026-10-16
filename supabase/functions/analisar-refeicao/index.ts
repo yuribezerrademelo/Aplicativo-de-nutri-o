@@ -13,6 +13,13 @@ import { withSupabase } from '@supabase/server';
 import { analisarRefeicao, ErroAnalise, tipoDaEntrada, validarEntrada } from '../_shared/analise.ts';
 import { VERSAO_PROMPT } from '../_shared/prompt-analise.ts';
 import { simularAnalise } from '../_shared/simulador.ts';
+import {
+  aplicarMemoriaNoSimulado,
+  montarContextoUsuario,
+  resumirHistorico,
+  type Memoria,
+  type RefeicaoHistorico,
+} from '../_shared/memoria.ts';
 
 const LIMITE_DIARIO = Number(Deno.env.get('ANALISE_LIMITE_DIARIO') ?? 40);
 
@@ -42,13 +49,35 @@ export default {
         return erro(429, 'limite', `Você chegou ao limite de ${LIMITE_DIARIO} análises em 24 horas. Tente mais tarde.`);
       }
 
+      // Memória do usuário: fatos guardados e refeições dos últimos 30 dias.
+      const trintaDias = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      const [{ data: memoriasBrutas }, { data: historico }] = await Promise.all([
+        ctx.supabase.from('memorias').select('texto, origem, chave, dados').order('atualizado_em', { ascending: false }).limit(15),
+        ctx.supabase
+          .from('refeicoes')
+          .select('kcal_provavel, itens, analise_original')
+          .gte('consumida_em', trintaDias)
+          .order('consumida_em', { ascending: false })
+          .limit(60),
+      ]);
+      const memorias = (memoriasBrutas ?? []) as Memoria[];
+      const contextoUsuario = montarContextoUsuario(memorias, resumirHistorico((historico ?? []) as RefeicaoHistorico[]));
+
+      let resultadoSimulado;
+      if (!apiKey) {
+        resultadoSimulado = await simularAnalise(entrada);
+        // No refinamento vale o que o usuário especificou, não a memória.
+        if (!entrada.anterior) resultadoSimulado = aplicarMemoriaNoSimulado(resultadoSimulado, memorias);
+      }
+
       const { resultado, uso, modelo } = apiKey
         ? await analisarRefeicao(entrada, {
             apiKey,
             modelo: Deno.env.get('ANALISE_MODELO') ?? undefined,
             esforco: (Deno.env.get('ANALISE_ESFORCO') as 'low' | 'medium' | 'high' | undefined) ?? undefined,
+            contextoUsuario,
           })
-        : { resultado: await simularAnalise(entrada), uso: { entrada: 0, saida: 0 }, modelo: 'simulado' };
+        : { resultado: resultadoSimulado!, uso: { entrada: 0, saida: 0 }, modelo: 'simulado' };
 
       const { error: erroRegistro } = await ctx.supabase.from('analises').insert({
         usuario_id: usuarioId,

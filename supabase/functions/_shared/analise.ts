@@ -34,6 +34,8 @@ export type OpcoesAnalise = {
   esforco?: 'low' | 'medium' | 'high';
   /** Permite simular a API nos testes. */
   fetch?: typeof fetch;
+  /** Memória do usuário (hábitos, porções frequentes, viés), montada no servidor. */
+  contextoUsuario?: string;
 };
 
 export type UsoTokens = { entrada: number; saida: number };
@@ -167,7 +169,7 @@ export function tipoDaEntrada(e: EntradaAnalise): TipoAnalise {
 }
 
 /** Monta a conversa enviada ao modelo. O refinamento vira um turno extra. */
-export function montarMensagens(e: EntradaAnalise) {
+export function montarMensagens(e: EntradaAnalise, contextoUsuario?: string) {
   const conteudo: Record<string, unknown>[] = [];
   if (e.imagem) {
     conteudo.push({ type: 'image', source: { type: 'base64', media_type: e.imagem.tipo, data: e.imagem.base64 } });
@@ -177,6 +179,7 @@ export function montarMensagens(e: EntradaAnalise) {
   if (e.imagem && e.texto) pedido = `Analise a refeição da foto. O usuário acrescentou:\n<descricao>${e.texto}</descricao>`;
   else if (e.imagem) pedido = 'Analise a refeição da foto.';
   else pedido = `Analise a refeição descrita pelo usuário (sem foto):\n<descricao>${e.texto}</descricao>`;
+  if (contextoUsuario) pedido = `<contexto_do_usuario>\n${contextoUsuario}\n</contexto_do_usuario>\n\n${pedido}`;
   conteudo.push({ type: 'text', text: pedido });
 
   const mensagens: { role: 'user' | 'assistant'; content: unknown }[] = [{ role: 'user', content: conteudo }];
@@ -221,7 +224,7 @@ export async function analisarRefeicao(
       model: modelo,
       max_tokens: 16000, // inclui o raciocínio do modelo
       system: PROMPT_ANALISE,
-      messages: montarMensagens(entrada),
+      messages: montarMensagens(entrada, opcoes.contextoUsuario),
       output_config: {
         effort: opcoes.esforco || ESFORCO_PADRAO,
         format: { type: 'json_schema', schema: SCHEMA_SAIDA },

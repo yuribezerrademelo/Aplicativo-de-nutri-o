@@ -2,14 +2,19 @@
  * POST /functions/v1/comentar-refeicao
  * Corpo: { refeicao_id, inicio_dia (ISO, início do dia no fuso do usuário), hora_local ("HH:MM") }
  *
- * Gera o comentário de coaching de uma refeição já confirmada, no contexto do dia,
- * e guarda em refeicoes.comentario. Sem ANTHROPIC_API_KEY, usa o modo simulado.
+ * Etapa pós-confirmação de uma refeição:
+ * 1. aprende com as correções do usuário e atualiza a memória (tabela memorias);
+ * 2. gera o comentário de coaching no contexto do dia e guarda em refeicoes.comentario.
+ * Sem ANTHROPIC_API_KEY, o aprendizado usa só regras e o comentário é simulado.
  *
  * Segredos opcionais: COACHING_MODELO (padrão claude-haiku-5-5), COACHING_LIMITE_DIARIO (padrão 30).
  */
-import { withSupabase } from '@supabase/server';
+import { withSupabase, type SupabaseContext } from '@supabase/server';
 
 import { ErroAnalise } from '../_shared/analise.ts';
+import { extrairFatosComIA } from '../_shared/aprendizado.ts';
+import type { ItemEstimado } from '../_shared/estimativa.ts';
+import { aprenderComCorrecoes, type Memoria } from '../_shared/memoria.ts';
 import {
   gerarComentario,
   simularComentario,
@@ -19,6 +24,9 @@ import {
 } from '../_shared/coaching.ts';
 
 const LIMITE_DIARIO = Number(Deno.env.get('COACHING_LIMITE_DIARIO') ?? 30);
+
+// Cliente do Supabase com a sessão do usuário (o mesmo tipo de ctx.supabase).
+type ClienteSupabase = SupabaseContext['supabase'];
 const UUID = /^[0-9a-f-]{36}$/i;
 
 const erro = (status: number, codigo: string, mensagem: string) =>
@@ -65,8 +73,17 @@ export default {
       const refeicoes = (doDia ?? []) as RefeicaoDoDia[];
       if (!refeicoes.some((r) => r.id === refeicaoId)) return erro(404, 'refeicao_nao_encontrada', 'Refeição não encontrada.');
 
-      const dados = { perfil: perfil as PerfilCoaching, refeicoes, refeicaoId, horaLocal };
       const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
+
+      // 1. Aprender com as correções desta refeição.
+      try {
+        await aprender(ctx.supabase, usuarioId, refeicaoId, apiKey);
+      } catch (e) {
+        console.error('Falha ao aprender com a refeição', e);
+      }
+
+      // 2. Comentário do coach.
+      const dados = { perfil: perfil as PerfilCoaching, refeicoes, refeicaoId, horaLocal };
       const { comentario, uso, modelo } = apiKey
         ? await gerarComentario(dados, { apiKey, modelo: Deno.env.get('COACHING_MODELO') ?? undefined })
         : { comentario: simularComentario(dados), uso: { entrada: 0, saida: 0 }, modelo: 'simulado' };
@@ -93,3 +110,33 @@ export default {
     }
   }),
 };
+
+/** Compara estimativa original e confirmada; grava fatos novos ou atualizados na memória. */
+async function aprender(supabase: ClienteSupabase, usuarioId: string, refeicaoId: string, apiKey: string | undefined) {
+  const { data: refeicao } = await supabase
+    .from('refeicoes')
+    .select('itens, analise_original, analise')
+    .eq('id', refeicaoId)
+    .single();
+  if (!refeicao) return;
+
+  const confirmados = (refeicao.itens ?? []) as ItemEstimado[];
+  const fatos: { chave: string; texto: string; dados?: unknown }[] = aprenderComCorrecoes(refeicao.analise_original, confirmados);
+
+  const especificacoes: string[] = refeicao.analise?.especificacoes ?? [];
+  if (apiKey && especificacoes.length) {
+    const { data: memorias } = await supabase.from('memorias').select('texto, origem, chave, dados').limit(30);
+    const { fatos: daIA } = await extrairFatosComIA(
+      { original: refeicao.analise_original, confirmados, especificacoes, memorias: (memorias ?? []) as Memoria[] },
+      { apiKey, modelo: Deno.env.get('COACHING_MODELO') ?? undefined },
+    );
+    fatos.push(...daIA.filter((f) => !fatos.some((r) => r.chave === f.chave)));
+  }
+  if (!fatos.length) return;
+
+  const { error } = await supabase.from('memorias').upsert(
+    fatos.map((f) => ({ usuario_id: usuarioId, origem: 'automatica', chave: f.chave, texto: f.texto, dados: f.dados ?? null })),
+    { onConflict: 'usuario_id,chave' },
+  );
+  if (error) console.error('Falha ao gravar memória', error);
+}

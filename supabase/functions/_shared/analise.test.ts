@@ -64,6 +64,15 @@ test('mensagens: refinamento vira conversa com a análise anterior', () => {
   assert.match(String(m[2].content), /frito/);
 });
 
+test('mensagens: contexto do usuário vai antes do pedido, em bloco próprio', () => {
+  const m = montarMensagens(validarEntrada({ texto: 'frango' }), 'Fatos sobre os hábitos do usuário:\n- Filés finos');
+  const texto = (m[0].content as { type: string; text?: string }[]).find((b) => b.type === 'text')!.text!;
+  assert.match(texto, /^<contexto_do_usuario>\nFatos sobre/);
+  assert.match(texto, /<\/contexto_do_usuario>\n\nAnalise a refeição descrita/);
+  const semContexto = (montarMensagens(validarEntrada({ texto: 'frango' }))[0].content as { text?: string }[])[0].text!;
+  assert.doesNotMatch(semContexto, /contexto_do_usuario/);
+});
+
 test('chamada: ignora blocos de raciocínio e usa o JSON do bloco de texto', async () => {
   const saida: SaidaModelo = {
     reconhecido: true,

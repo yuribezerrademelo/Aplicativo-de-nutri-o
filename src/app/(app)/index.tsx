@@ -164,6 +164,7 @@ export default function TelaInicio() {
         </View>
 
         <View style={styles.acoes}>
+          <Botao titulo="Minha memória" variante="contorno" onPress={() => router.push('/memoria')} />
           <Botao titulo="Editar meus dados" variante="contorno" onPress={() => router.push('/editar-perfil')} />
           <Botao titulo="Sair" variante="secundario" onPress={() => supabase.auth.signOut()} />
         </View>

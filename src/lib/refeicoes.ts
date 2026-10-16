@@ -79,8 +79,12 @@ export async function salvarRefeicao(dados: {
   tipo: TipoRefeicao;
   origem: 'foto' | 'texto';
   descricao?: string;
+  /** Primeira estimativa da IA, antes das correções (para a memória aprender). */
+  analiseOriginal?: ResultadoAnalise | null;
+  /** O que o usuário escreveu ao especificar o prato. */
+  especificacoes?: string[];
 }): Promise<{ id: string } | { erro: string }> {
-  const { resultado, tipo, origem, descricao } = dados;
+  const { resultado, tipo, origem, descricao, analiseOriginal, especificacoes } = dados;
   const { total } = resultado;
   const { data, error } = await supabase.from('refeicoes').insert({
     tipo,
@@ -97,7 +101,9 @@ export async function salvarRefeicao(dados: {
     analise: {
       suposicoes: resultado.suposicoes,
       observacao: resultado.observacao,
+      especificacoes: especificacoes ?? [],
     },
+    analise_original: analiseOriginal ? { itens: analiseOriginal.itens, total: analiseOriginal.total } : null,
     simulada: !!resultado.simulado,
   })
     .select('id')

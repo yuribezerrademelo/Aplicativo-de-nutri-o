@@ -22,6 +22,9 @@ export default function TelaRegistrar() {
   const [foto, setFoto] = useState<FotoPreparada | null>(null);
   const [texto, setTexto] = useState('');
   const [resultado, setResultado] = useState<ResultadoAnalise | null>(null);
+  // Para a memória: a primeira estimativa e tudo o que o usuário especificou depois.
+  const [original, setOriginal] = useState<ResultadoAnalise | null>(null);
+  const [especificacoes, setEspecificacoes] = useState<string[]>([]);
   const [carregando, setCarregando] = useState<Carregando>(null);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -65,6 +68,8 @@ export default function TelaRegistrar() {
       return;
     }
     setResultado(r.resultado);
+    setOriginal(r.resultado);
+    setEspecificacoes([]);
     setEscolhas({});
     setEspecificacao('');
   }
@@ -87,6 +92,7 @@ export default function TelaRegistrar() {
       return;
     }
     setResultado(r.resultado);
+    setEspecificacoes((atual) => [...atual, correcao]);
     setEscolhas({});
     setEspecificacao('');
   }
@@ -99,7 +105,14 @@ export default function TelaRegistrar() {
     if (!resultado?.itens.length) return;
     setErro(null);
     setCarregando('salvar');
-    const salva = await salvarRefeicao({ resultado, tipo, origem: foto ? 'foto' : 'texto', descricao: texto });
+    const salva = await salvarRefeicao({
+      resultado,
+      tipo,
+      origem: foto ? 'foto' : 'texto',
+      descricao: texto,
+      analiseOriginal: original,
+      especificacoes,
+    });
     setCarregando(null);
     if ('erro' in salva) {
       setErro(salva.erro);
@@ -112,6 +125,8 @@ export default function TelaRegistrar() {
 
   function recomecar() {
     setResultado(null);
+    setOriginal(null);
+    setEspecificacoes([]);
     setFoto(null);
     setTexto('');
     setErro(null);
