@@ -25,8 +25,10 @@ comment on column public.contribuicoes.contribuinte is 'SHA-256 do id do usuári
 create index contribuicoes_alimento on public.contribuicoes (alimento, preparo);
 create index contribuicoes_contribuinte on public.contribuicoes (contribuinte);
 
--- Sem acesso pela API do app: só funções com a chave secreta leem e escrevem.
+-- Sem acesso pela API do app: só funções com a chave secreta (service_role) leem e escrevem.
 revoke all on public.contribuicoes from anon, authenticated;
+grant select, insert, delete on public.contribuicoes to service_role;
+grant usage, select on sequence public.contribuicoes_id_seq to service_role;
 alter table public.contribuicoes enable row level security;
 
 -- Referências da comunidade: só alimentos confirmados por 5 pessoas diferentes ou mais.
@@ -44,3 +46,4 @@ group by alimento, preparo
 having count(distinct contribuinte) >= 5;
 
 revoke all on public.referencias_coletivas from anon, authenticated;
+grant select on public.referencias_coletivas to service_role;
