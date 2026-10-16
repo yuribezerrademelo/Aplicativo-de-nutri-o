@@ -55,6 +55,29 @@ A análise das refeições roda na edge function `analisar-refeicao` e o coment�
 
 Mudou o prompt (`supabase/functions/_shared/prompt-analise.ts`)? Rode `npm run avaliar` antes e depois, atualize `VERSAO_PROMPT` e faça o deploy de novo.
 
+## Gerar o APK (instalar sem o Expo Go)
+
+O build roda na nuvem do Expo (EAS), sem Android Studio. Plano gratuito do Expo é suficiente.
+
+1. Crie uma conta em [expo.dev](https://expo.dev) e entre pelo terminal:
+   ```bash
+   npx eas-cli@latest login
+   ```
+2. Cadastre as chaves do Supabase no ambiente `preview` do EAS (o `.env` local não vai para a nuvem):
+   ```bash
+   npx eas-cli@latest env:set --name EXPO_PUBLIC_SUPABASE_URL --value https://SEU-PROJETO.supabase.co --environment preview --visibility plaintext
+   npx eas-cli@latest env:set --name EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY --value SUA_PUBLISHABLE_KEY --environment preview --visibility plaintext
+   ```
+   As duas são públicas por natureza; a chave da Claude nunca entra aqui.
+3. Gere o APK:
+   ```bash
+   npx eas-cli@latest build -p android --profile preview
+   ```
+   Na primeira vez ele pergunta se pode criar o projeto no Expo e a chave de assinatura Android: responda sim.
+4. Ao terminar, o terminal mostra um link e um QR code. Abra no celular, baixe o APK e instale (o Android pede para permitir instalação de fontes desconhecidas).
+
+Para mandar a amigos, é só compartilhar o mesmo link.
+
 ## Estrutura
 
 ```
